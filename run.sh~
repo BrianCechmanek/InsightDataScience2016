@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-# runs median_calculate.py in python3 with no directory arguments
-
-python ./src/median_degree.py
