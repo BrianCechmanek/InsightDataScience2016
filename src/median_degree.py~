@@ -11,7 +11,6 @@ import statistics
 import bisect
 import datetime
 import re
-# import unittest #Maybe?
 
 
 #GLOBALS    
@@ -79,7 +78,6 @@ class Graph(object):
         Timestamps are not represented here- rather handled in Window. """
     
     def __init__(self, graph_dict={}):
-        """ initialize graph object: a dicitonary"""
         self.graph_dict = graph_dict
 
     def add_node(self, actor, target):
@@ -99,7 +97,6 @@ class Graph(object):
         """ handles formated transaction to update the graph. transaction is
             of the form = transaction[0] = actor, transaction[1] = target. """
         self.add_node(actor, target)
-        #self.add_edge(actor, target)
 
     def clean_graph(self, actor, target):
         """ clears 'old' transaction data from the input nodes, symmetrically.
@@ -108,19 +105,18 @@ class Graph(object):
             self.graph_dict[actor].remove(target)
             self.graph_dict[target].remove(actor)
         except ValueError:
-            print("Can't remove " + actor + "or " + target + "from graph.")
-            # for later addign to error log file
+            log_error("Can't remove " + actor + "or " + target + "from graph.", "")
         
         if not self.graph_dict[actor]:
             try:
                 self.graph_dict.pop(actor)
-            except KeyError:
-                pass
+            except KeyError as e:
+                log_error("dict.pop error ", e)
         if not self.graph_dict[target]:
             try:
                 self.graph_dict.pop(target)
-            except KeyError:
-                pass
+            except KeyError as e:
+                log_error("dict.pop error ", e)
 
     # MEDIAN CALCULATION
     def count_edges(self):
@@ -153,25 +149,19 @@ class Graph(object):
 
 #WINDOW IMPLEMENTATION
 class Window(object):
-    """ Window holds the 60 second frame for evaluation. Manages adding and popping
+    """ A Window holds the 60 second frame for evaluation. Manages adding and popping
         elements from both the window list, and the Graph dictionary.
-        input order is = TIMESTAMP, ACTOR, TARGET."""
+        input order = TIMESTAMP, ACTOR, TARGET."""
     
     def __init__(self, window=[(datetime.datetime(1, 1, 1, 1, 1, 1))], nodes=[{}]):
-        """ initiate window list, with dummy entry. This saves a lot of work later."""
+        """ initiate window list, with dummy entry for datetime."""
         self.window = window
         self.nodes = nodes
 
-    def insert(self, timestamp, actor, target, graph):
-        # NOTE: bisect algorithm is fairly slow at scale, so this 
-        # require change to inserting from the end of the list retroactively
-        # checking. which, while is max O(N), in practice due to 60s window
-        # will be shorter than log2(N)        
+    def insert(self, timestamp, actor, target, graph):        
         if {actor, target} in self.nodes:
             self.window.pop(self.nodes.index({actor, target}))
             self.nodes.remove({actor, target})
-        #if timestamp > self.window[-1]:
-        # compare datetimes here
         if timestamp > self.window[-1]:
             self.window.append(timestamp)
         else:
@@ -180,19 +170,17 @@ class Window(object):
         # push to Graph as well
         graph.handle_transaction(actor, target)
 
-
     def pop_out_of_window(self, graph):
-        """ pop leading window values that don't fit in 60s window."""
+        """ pop leading window[] values that don't fit in 60s window."""
         i=0
         while (self.window[i]>(self.window[-1]+datetime.timedelta(seconds=60)) and len(self.window)>1):
             try:
                 self.window.pop(i)
                 removed = list(self.nodes.pop(i))
                 graph.clean_graph(removed[i], removed[1])
-            except IndexError:
-                print("Index Error at i=", str(i))
+            except IndexError as e:
+                log_error("Index error : ", e)
  
-        
     # DEBUGGING METHODS        
     def get_timestamps(self):
         return self.window    
@@ -213,9 +201,6 @@ class Window(object):
 
 # main loop
 def main():
-
-    # Streamable data would be read from API
-    # we will not mimic that here, instead will call transactions one-by-one in the 
     with open(dataLocation + inFile, 'r') as f:  
         """ Currently reads all data as a full block, and advances line by line in main().
             The streamable implementation would follow similarly by feeding lines into
@@ -236,8 +221,8 @@ def main():
     #create output.txt and ErrorLog.txt
     outFile = dataLocation + "/venmo_output/" + "output.txt"
     errFile = dataLocation + "/venmo_output/" + "ErrorLog.txt"
-    if not os.path.exists(errFile):
-        os.makedirs(errFile)
+    if not os.path.exists(dataLocation + "/venmo_output/"):
+        os.makedirs(dataLocation + "/venmo_output/")
     e = open(errFile, 'w')
     e.write("venmo-trans.txt input data errors \n")
     e.close()
