@@ -2,7 +2,7 @@
 
 #### Submission for the InsightDataScience coding-challenge (https://github.com/InsightDataScience/coding-challenge) for the September 2016 cohort. By Brian Cechmanek
 
-#### This script is written for python3+ (it will not run on python2+ due to the statistics module
+#### This script is written for python3+ (it will not run on python2+ due to the statistics module)
 
 #### this script can be run with the optional modifier '/venmo_input/FILE.txt' to run an input file other than venmo-trans.txt
 
